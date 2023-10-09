@@ -22,6 +22,6 @@ export async function insert(tabela, usuario_id, antes, depois) {
 
 export async function getLogs() {
     return openDb().then(async db => {
-        return db.all('SELECT * FROM logs');
+        return db.all('SELECT * FROM log');
     });
 }

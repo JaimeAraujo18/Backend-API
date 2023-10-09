@@ -1,7 +1,7 @@
 import express from 'express';
-import axios from 'axios';
 
 import { initDb } from './models/configDB.js';
+import { sendLog } from './helper.js';
 
 // load model file to interact with its methods
 import * as usuarioDb from './models/Usuario.js';
@@ -68,26 +68,15 @@ app.get('/usuario/:id', async (req, res) => {
 });
 
 app.post('/usuario', async (req, res) => {
-    let ret = await usuarioDb.insert({
-        nome: req.body.nome,
+    let usuario = await usuarioDb.insert({
+        name: req.body.name,
         user: req.body.user,
         password: req.body.password
     });
 
-    console.log('insertId: ', ret.id);
-    let usuario = await usuarioDb.getUsuarioById(ret.id),
-        log = await logDb.insert('usuario', req.body.usuarioId, '', JSON.stringify(usuario));
+    let log = await logDb.insert('usuario', req.body.userId, '', JSON.stringify(usuario));
 
-    console.log(log);
-    // let host = 1;
-    await axios.post('http://localhost:3001/mine', {
-        data: {
-            usuarioId: log.usuario_id,
-            before: log.hash_before,
-            after: log.hash_after
-        }
-    }
-    );
+    sendLog(log);
 
     res.json({
         status: 'success',
@@ -96,13 +85,39 @@ app.post('/usuario', async (req, res) => {
 });
 
 app.put('/usuario/:id', async (req, res) => {
+    let usuarioAntes = await usuarioDb.getUsuarioById(req.params.id);
+
     await usuarioDb.updateById(req.body, req.params.id);
+
+    let usuarioDepois = await usuarioDb.getUsuarioById(req.params.id);
+
+    let log = await logDb.insert('usuario', req.body.userId, JSON.stringify(usuarioAntes), JSON.stringify(usuarioDepois));
+
+    sendLog(log);
 
     res.json({
         status: 'success',
         message: 'Usuário atualizado com sucesso!'
     });
 });
+
+app.delete('/usuario/:id', async (req, res) => {
+    let usuarioAntes = await usuarioDb.getUsuarioById(req.params.id);
+
+    await usuarioDb.deleteById(req.params.id);
+
+    let log = await logDb.insert('usuario', req.body.userId, JSON.stringify(usuarioAntes), '');
+
+    sendLog(log);
+
+    res.json({
+        status: 'success',
+        message: 'Usuário excluído com sucesso!'
+    });
+});
+
+
+
 
 
 // endpoints da tabela pessoa
@@ -111,11 +126,18 @@ app.get('/pessoa', async (req, res) => {
 });
 
 app.get('/pessoa/:id', async (req, res) => {
-    res.json(await usuarioDb.getPessoaById(req.params.id));
+    res.json(await pessoaDb.getPessoaById(req.params.id));
 });
 
 app.post('/pessoa', async (req, res) => {
-    await pessoaDb.insert(req.body);
+    let pessoa = await pessoaDb.insert({
+        name: req.body.name,
+        age: req.body.age,
+    });
+
+    let log = await logDb.insert('pessoa', req.body.userId, '', JSON.stringify(pessoa));
+
+    sendLog(log);
 
     res.json({
         status: 'success',
@@ -124,15 +146,40 @@ app.post('/pessoa', async (req, res) => {
 });
 
 app.put('/pessoa/:id', async (req, res) => {
+    let pessoaAntes = await pessoaDb.getPessoaById(req.params.id);
+
     await pessoaDb.updateById(req.body, req.params.id);
+
+    let pessoaDepois = await pessoaDb.getPessoaById(req.params.id);
+
+    let log = await logDb.insert('pessoa', req.body.userId, JSON.stringify(pessoaAntes), JSON.stringify(pessoaDepois));
+
+    sendLog(log);
 
     res.json({
         status: 'success',
         message: 'Pessoa atualizada com sucesso!'
     });
-
-
 });
 
+app.delete('/pessoa/:id', async (req, res) => {
+    let pessoaAntes = await pessoaDb.getPessoaById(req.params.id);
+
+    await pessoaDb.deleteById(req.params.id);
+
+    let log = await logDb.insert('pessoa', req.body.userId, JSON.stringify(pessoaAntes), '');
+
+    sendLog(log);
+
+    res.json({
+        status: 'success',
+        message: 'Pessoa excluída com sucesso!'
+    });
+});
+
+// endpoints da tabela Logs
+app.get('/log', async (req, res) => {
+    res.json(await logDb.getLogs());
+});
 
 app.listen(3000, () => console.log('Api rodando na porta ' + HTTP_PORT));

@@ -7,38 +7,24 @@ export async function createTable() {
 }
 
 export async function insert(pessoa) {
-    let args = [],
-        params = [...Object.keys(pessoa), Object.values(pessoa)];
+    return openDb().then(db => {
+        let sql = 'INSERT INTO pessoa(nome, idade) VALUES (?,?)';
+        db.run(sql, [pessoa.name, pessoa.age]);
 
-    for (let i = 0; i < Object.keys(pessoa).length; i++) {
-        obj.args.push('?');
-    }
-
-    args = args.join(',');
-    openDb().then(db => {
-        db.exec(`INSERT INTO pessoa(${args}) VALUES (${args})`, params);
+        return db.get('SELECT * FROM pessoa ORDER BY id DESC LIMIT 1');
     });
 }
 
 export async function updateById(pessoa, id) {
-    let args = [],
-        params = [];
-
-    for (const key in pessoa) {
-        args.push('? = ?');
-        params.push(...[key, pessoa[key]]);
-    }
-
-    params.push(id);
-    args = args.join(',');
     openDb().then(db => {
-        db.exec(`UPDATE pessoa SET ${args} where id = ?`, params);
+        let sql = 'UPDATE pessoa SET nome=?, idade=? WHERE id = ?';
+        db.run(sql, [pessoa.name, pessoa.age, id]);
     });
 }
 
 export async function deleteById(id) {
     openDb().then(db => {
-        db.exec(`DELETE FROM pessoa WHERE id = ?`, id);
+        db.run('DELETE FROM pessoa WHERE id = ?', id);
     });
 }
 
